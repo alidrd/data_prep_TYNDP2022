@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "sa-data-analysis-temp"
+version = "0.1.0"
+description = ""
+authors = ["Ali Darudi <ali.darudi@unibas.ch>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.13"
+pandas = "^2.1.2"
+plotly = "^5.18.0"
+openpyxl = "^3.1.2"
+pyxlsb = "^1.0.10"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
