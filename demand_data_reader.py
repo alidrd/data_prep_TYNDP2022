@@ -10,7 +10,7 @@ target_output_dir = r"demand//"
 PECD_data_years_list = [2050,] # 2030, 2025, 2040
 
 # target climate years
-climate_years_list = [2008, 2009z, 1995]
+climate_years_list = [2008, 2009, 1995]
 
 # policy scenario
 EU_policy_dict = {
