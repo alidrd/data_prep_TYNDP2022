@@ -2,7 +2,7 @@ import pandas as pd
 
 
 # define paths ---------------------------------------------------------------
-climate_data_dir = r"C:\Users\daru\OneDrive - ZHAW\EDGE\TYNDP_2022\demand"
+climate_data_dir = r"C:\Users\daru\OneDrive - ZHAW\EDGE\data_sources\TYNDP_2022\demand"
 target_output_dir = r"demand//"
 
 # define years ---------------------------------------------------------------

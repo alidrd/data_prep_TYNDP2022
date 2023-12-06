@@ -147,9 +147,9 @@ def export_cal_country(df, target_country):
         )
 
 
-# import the xlsx file C:\Users\daru\OneDrive - ZHAW\EDGE\TYNDP_2022\220310_Updated_Electricity_Modelling_Results.xlsx 
+# import the xlsx file C:\Users\daru\OneDrive - ZHAW\EDGE\data_sources\TYNDP_2022\220310_Updated_Electricity_Modelling_Results.xlsx 
 # into a dataframe called df
-flows_all_df = pd.read_excel(r"C:\Users\daru\OneDrive - ZHAW\EDGE\TYNDP_2022\220310_Updated_Electricity_Modelling_Results - Kopie.xlsx", sheet_name="Line")
+flows_all_df = pd.read_excel(r"C:\Users\daru\OneDrive - ZHAW\EDGE\data_sources\TYNDP_2022\220310_Updated_Electricity_Modelling_Results - Kopie.xlsx", sheet_name="Line")
 
 # remove columns that have only NaN values
 flows_all_df = flows_all_df.dropna(axis=1, how="all")
@@ -219,17 +219,17 @@ for target_country in target_country_list:
     nodes_electric_data[target_country] = nodes_electric_data
 
 
-exports_all_sum.to_excel(r"C:\Users\daru\OneDrive - ZHAW\EDGE\TYNDP_2022\analysis\exports_all_sum.xlsx")
-exports_all.to_excel(r"C:\Users\daru\OneDrive - ZHAW\EDGE\TYNDP_2022\analysis\exports_all.xlsx")
-exports_H2_sum.to_excel(r"C:\Users\daru\OneDrive - ZHAW\EDGE\TYNDP_2022\analysis\exports_H2_sum.xlsx")
-exports_H2.to_excel(r"C:\Users\daru\OneDrive - ZHAW\EDGE\TYNDP_2022\analysis\exports_H2.xlsx")
-exports_within_country_H2_sum.to_excel(r"C:\Users\daru\OneDrive - ZHAW\EDGE\TYNDP_2022\analysis\exports_within_country_H2_sum.xlsx")
-exports_within_country_H2.to_excel(r"C:\Users\daru\OneDrive - ZHAW\EDGE\TYNDP_2022\analysis\exports_within_country_H2.xlsx")
-exports_within_country_electricity_H2_sum.to_excel(r"C:\Users\daru\OneDrive - ZHAW\EDGE\TYNDP_2022\analysis\exports_within_country_electricity_H2_sum.xlsx")
-exports_within_country_electricity_H2.to_excel(r"C:\Users\daru\OneDrive - ZHAW\EDGE\TYNDP_2022\analysis\exports_within_country_electricity_H2.xlsx")
-exports_within_country_electricity_sum.to_excel(r"C:\Users\daru\OneDrive - ZHAW\EDGE\TYNDP_2022\analysis\exports_within_country_electricity_sum.xlsx")
-exports_within_country_electricity.to_excel(r"C:\Users\daru\OneDrive - ZHAW\EDGE\TYNDP_2022\analysis\exports_within_country_electricity.xlsx")
+exports_all_sum.to_excel(r"C:\Users\daru\OneDrive - ZHAW\EDGE\data_sources\TYNDP_2022\analysis\exports_all_sum.xlsx")
+exports_all.to_excel(r"C:\Users\daru\OneDrive - ZHAW\EDGE\data_sources\TYNDP_2022\analysis\exports_all.xlsx")
+exports_H2_sum.to_excel(r"C:\Users\daru\OneDrive - ZHAW\EDGE\data_sources\TYNDP_2022\analysis\exports_H2_sum.xlsx")
+exports_H2.to_excel(r"C:\Users\daru\OneDrive - ZHAW\EDGE\data_sources\TYNDP_2022\analysis\exports_H2.xlsx")
+exports_within_country_H2_sum.to_excel(r"C:\Users\daru\OneDrive - ZHAW\EDGE\data_sources\TYNDP_2022\analysis\exports_within_country_H2_sum.xlsx")
+exports_within_country_H2.to_excel(r"C:\Users\daru\OneDrive - ZHAW\EDGE\data_sources\TYNDP_2022\analysis\exports_within_country_H2.xlsx")
+exports_within_country_electricity_H2_sum.to_excel(r"C:\Users\daru\OneDrive - ZHAW\EDGE\data_sources\TYNDP_2022\analysis\exports_within_country_electricity_H2_sum.xlsx")
+exports_within_country_electricity_H2.to_excel(r"C:\Users\daru\OneDrive - ZHAW\EDGE\data_sources\TYNDP_2022\analysis\exports_within_country_electricity_H2.xlsx")
+exports_within_country_electricity_sum.to_excel(r"C:\Users\daru\OneDrive - ZHAW\EDGE\data_sources\TYNDP_2022\analysis\exports_within_country_electricity_sum.xlsx")
+exports_within_country_electricity.to_excel(r"C:\Users\daru\OneDrive - ZHAW\EDGE\data_sources\TYNDP_2022\analysis\exports_within_country_electricity.xlsx")
 # export nodes_electric_data to an excel file where each sheet is a country
-with pd.ExcelWriter(r"C:\Users\daru\OneDrive - ZHAW\EDGE\TYNDP_2022\analysis\nodes_electric_data.xlsx") as writer:
+with pd.ExcelWriter(r"C:\Users\daru\OneDrive - ZHAW\EDGE\data_sources\TYNDP_2022\analysis\nodes_electric_data.xlsx") as writer:
     for country, data in nodes_electric_data.items():
         data.to_excel(writer, sheet_name=country)

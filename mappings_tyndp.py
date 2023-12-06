@@ -1,7 +1,7 @@
 import pandas as pd
 
 # Read in the data
-mappings_df = pd.read_excel(r"C:\Users\daru\OneDrive - ZHAW\EDGE\TYNDP_2022\220310_Updated_Electricity_Modelling_Results - Kopie.xlsx", sheet_name="Nodes - Dict")
+mappings_df = pd.read_excel(r"C:\Users\daru\OneDrive - ZHAW\EDGE\data_sources\TYNDP_2022\220310_Updated_Electricity_Modelling_Results - Kopie.xlsx", sheet_name="Nodes - Dict")
 
 # Create a dictionary with the mappings, where the key is unique values in column Country Name and the value is all corresponding values in column Node
 Map_countryname_nodes = {key: mappings_df.loc[mappings_df["Country Name"] == key, "Node"].tolist() 

@@ -5,7 +5,7 @@ import glob
 
 
 # define paths ---------------------------------------------------------------
-climate_data_dir = r"C:\Users\daru\OneDrive - ZHAW\EDGE\TYNDP_2022//"
+climate_data_dir = r"C:\Users\daru\OneDrive - ZHAW\EDGE\data_sources\TYNDP_2022//"
 target_output_dir = r"NTC//"
 
 # define years ---------------------------------------------------------------

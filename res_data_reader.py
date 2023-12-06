@@ -4,7 +4,7 @@ import glob
 
 
 # define paths ---------------------------------------------------------------
-climate_data_dir = r"C:\Users\daru\OneDrive - ZHAW\EDGE\TYNDP_2022\Climate Data"
+climate_data_dir = r"C:\Users\daru\OneDrive - ZHAW\EDGE\data_sources\TYNDP_2022\Climate Data"
 target_output_dir = r"RES_availability_factor_PECD//"
 
 # define years ---------------------------------------------------------------

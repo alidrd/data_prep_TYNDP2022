@@ -4,7 +4,7 @@ import glob
 import logging
 
 # define paths ---------------------------------------------------------------
-source_data_dir = r"C:\Users\daru\OneDrive - ZHAW\EDGE\TYNDP_2022//"
+source_data_dir = r"C:\Users\daru\OneDrive - ZHAW\EDGE\data_sources\TYNDP_2022//"
 target_output_dir = r"capacit_gen//"
 
 # define years ---------------------------------------------------------------
