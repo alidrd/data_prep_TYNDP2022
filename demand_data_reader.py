@@ -78,5 +78,5 @@ for run_year in PECD_data_years_list:
                 print("Reading demand data for ", run_year , " for climate_year year ", climate_year, " and EU policy ", EU_policy)
                 availability_factor_df = read_data_demand(EU_policy, run_year, climate_year)
                 # write the data to csv file
-                availability_factor_df.to_csv(target_output_dir + "demand _" + EU_policy_long + "_" + str(run_year) + "_" + str(climate_year) + ".csv", index=True)
+                availability_factor_df.to_csv(target_output_dir + "demand_" + EU_policy_long + "_" + str(run_year) + "_" + str(climate_year) + ".csv", index=True)
 
