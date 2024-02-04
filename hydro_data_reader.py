@@ -135,9 +135,10 @@ df_waternodes_level = df_waternodes_level.rename(columns={'Reservoir levels at b
 df_waternodes_level['level'] = df_waternodes_level['level'].fillna((df_waternodes_level['level_min']+df_waternodes_level['level_max'])/2)
 df_waternodes_level.head()
 
-#we use 2016 levels for 2017
-df_waternodes_level.year[((df_waternodes_level.zone=="AT00") & (df_waternodes_level.year==2017))]=0000
-df_waternodes_level.year[((df_waternodes_level.zone=="AT00") & (df_waternodes_level.year==2016))]=2017
+# #we use 2016 levels for 2017
+# df_waternodes_level.year[((df_waternodes_level.zone=="AT00") & (df_waternodes_level.year==2017))]=0000
+# df_waternodes_level.year[((df_waternodes_level.zone=="AT00") & (df_waternodes_level.year==2016))]=2017
+
 #now we separate into the three weather years (more can be selected at the beginning of this file)
 for year in climate_years_list:
     df_temp = pd.DataFrame()

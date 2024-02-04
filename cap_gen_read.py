@@ -5,11 +5,11 @@ import logging
 
 # define paths ---------------------------------------------------------------
 source_data_dir = r"C:\Users\daru\OneDrive - ZHAW\EDGE\data_sources\TYNDP_2022//"
-target_output_dir = r"capacit_gen//"
+target_output_dir = r"annuals_cap_dem_gen_imp//"
 
 # define years ---------------------------------------------------------------
 # years for which capacity factor is available
-PECD_data_years_list = [2050,] # 2030, 2025, 2040
+PECD_data_years_list = [2050, 2040, 2030,] # 2030, 2025, 2040
 
 # target climate years
 climate_years_list = [2008, 2009, 1995]
@@ -32,7 +32,36 @@ def read_data_cap_gen(EU_policy, run_year, climate_year):
     """
     # target xlsx file
     file_name = source_data_dir + r"\220310_Updated_Electricity_Modelling_Results.xlsx"
-    df_all = pd.read_excel(file_name, sheet_name="Capacity & Dispatch")
+    df_gen = pd.read_excel(file_name, sheet_name="Capacity & Dispatch")
+
+    # find all unique values in the column "Fuel"
+    tech_gen_list = df_gen["Fuel"].unique().tolist()
+
+    # also read the sheet Flexiblity and merge it with df_all
+    df_flex = pd.read_excel(file_name, sheet_name="Flexibility")
+
+    # remove all rows that have "Prosumer" in column "Generator ID" (to avoid controlling prosumers)
+    # df_flex = df_flex[df_flex["Generator ID"].str.contains("Prosumer") == False]
+
+    # drop the column "Generator ID"
+    df_flex = df_flex.drop(columns=["Generator ID"])
+
+    # find all unique values in the column "Generator ID"
+    tech_flex_list = df_flex["Fuel"].unique().tolist()
+
+    # find a list of items that exist in both tech_gen_list and tech_flex_list
+    tech_gen_flex_list = list(set(tech_gen_list) & set(tech_flex_list))
+
+    # merge df_all and df_flex
+    df_all = pd.concat([df_gen, df_flex], axis=0)
+
+    # remove all rows that have "Hydro" in column "Fuel" (because hydro data is read in separately from PECD)
+    df_all = df_all[df_all["Fuel"].str.startswith("Hydro") == False]
+
+
+    # if there are duplicate rows with respect to all columns except "Value", keep the first row and sum the values in the column "Value"
+    df_all = df_all.groupby(df_all.columns.difference(["Value"]).tolist()).agg({"Value": "sum"}).reset_index()
+
 
     # for the values in the column "Climate Year", reomve "CY "
     df_all["Climate Year"] = df_all["Climate Year"].str.replace("CY ", "")
@@ -109,6 +138,7 @@ def read_data_cap_gen(EU_policy, run_year, climate_year):
 # if target_output_dir does not exist, create it
 if not os.path.exists(target_output_dir):
     os.makedirs(target_output_dir)
+
 
 for run_year in PECD_data_years_list:
     for EU_policy, EU_policy_long in EU_policy_spaced_dict.items():
