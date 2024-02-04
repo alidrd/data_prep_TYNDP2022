@@ -4,8 +4,10 @@ demand/*.csv
 NTC/*.csv
 RES_availability_factor_PECD/*.csv
 annuals_cap_dem_gen_imp/*.csv
-hydro_PECD/*.csv\
-inputs_to_model/*.csv
+hydro_PECD/*.csv
+# all files in input_to_model and its subfolders
+input_to_model/
+
 
 
 # Byte-compiled / optimized / DLL files
