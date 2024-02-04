@@ -256,7 +256,7 @@ dem_exp_df["name"] = "electrolyzer_" + dem_exp_df["node"]
 
 # export the columns name, node, tech, scenario, run_year, weather_year, electrolyzer_net_demand
 dem_exp_df = dem_exp_df[["name", "node", "tech", "scenario", "run_year", "weather_year", "electrolyzer_net_demand"]]
-dem_exp_df.to_csv(target_output_dir + "z.csv", encoding="utf-8", index=False)
+dem_exp_df.to_csv(target_output_dir + "electrolyzer_net_demand.csv", encoding="utf-8", index=False)
 
 # create plants_electrolyzer.csv ----------------------------------------------------------------------------
 plants_electrolyzer_list_df = pd.DataFrame(columns=["index", "node", "market", "plant_type", "tech", "upperwn", "lowerwn", "eta", "eta_pump", "n_redispatch"])
