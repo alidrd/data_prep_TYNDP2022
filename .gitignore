@@ -1,0 +1,92 @@
+# ignore output files
+# files in the directory "demand" and its subfolders
+demand/*.csv
+NTC/*.csv
+RES_availability_factor_PECD/*.csv
+annuals_cap_dem_gen_imp/*.csv
+hydro_PECD/*.csv\
+inputs_to_model/*.csv
+
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+pythonenv/
+*.env
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# VSCode settings
+.vscode/
+
+# Python-Specific
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore mypy cache
+.mypy_cache/
+
+# Ignore Pyright cache
+.pyright/
+
+# Ignore pycodestyle cache
+.pycodestyle
+
+# Ignore Black code style cache
+.black
+
+# Ignore coverage.py directory
+.coverage
+
+# Ignore Jupyter Notebooks checkpoints
+.ipynb_checkpoints/
