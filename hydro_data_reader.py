@@ -7,12 +7,17 @@ from numpy.core.numeric import indices
 import pandas as pd
 import os
 import sys
-current_directory = os.getcwd()
-sys.path.append(current_directory + '/src')
 
+# Options ---------------------------------------------------------------------
+merge_some_countries = True # if True, the data for several regions in Italy (and also Luxembourg) are merged into IT00 (and LU00)
+target_merge_countries = ["IT","LU"] # countries to merge
+
+#NOTE: PECD-hydro-weekly-reservoir-levels.csv had no information for IT and LU, so no merging code was written for this case.
 # define paths ---------------------------------------------------------------
 climate_data_dir = r"source_hydro_PECD\PECD_hydro//"
-target_output_dir = r"hydro_PECD//"
+target_output_dir = r"inputs_to_model//hydro_PECD//"
+current_directory = os.getcwd()
+sys.path.append(current_directory + '/src')
 
 # define years ---------------------------------------------------------------
 # years for which capacity factor is available
@@ -29,20 +34,76 @@ technology_dict = {"Reservoir"                :"dam",
                    "Pump Storage - Open Loop"  :"psp_open",
                    "Pump Storage - Closed Loop":"psp_closed",
 }
-map_zone = {'AT00':'AT00','BE00':'BE00','CZ00':'CZ00','DE00':'DE00','ES00':'ES00','FR00':'FR00','HR00':'HR00','HU00':'HU00','ITCN':'ITCN','ITCS':'ITCS','ITN1':'ITN1','ITS1':'ITS1','ITSA':'ITSA','ITSI':'ITSI','LUG1':'LU00','LUV1':'LU00','NL00':'NL00','NOM1':'NOM1','NON1':'NON1','NOS0':'NOS0','PL00':'PL00','PT00':'PT00','SE01':'SE01','SE02':'SE02','SE03':'SE03','SE04':'SE04','SI00':'SI00','SK00':'SK00','UK00':'UK00','CH00':'CH00'}
 
+# functions      -----------------------------------------------------------
+def merge_country_regions_capacities(data_df):
+    """
+    Merge the data for several regions in countries included in target_merge_countries.
+    """
+    if merge_some_countries:
+        for country in target_merge_countries:
+            # find regions that start with country
+            regions = data_df[data_df.zone.str.startswith(country)].zone.unique()
+
+            # sum the capacities of the regions: 
+            df_temp = data_df[data_df.zone.isin(regions)].groupby(["type", "variable"]).sum().reset_index()
+
+            # change zone name from regionregion to country00
+            df_temp["zone"] = country + "00"
+
+            # remvoe the regions from the data_df
+            data_df = data_df[~data_df.zone.isin(regions)]
+
+            # add df_temp to data_df
+            data_df = pd.concat([data_df, df_temp])
+
+    return data_df
+
+def merge_country_regions_inflow(data_df, target_variable):
+    """
+    Merge the data for several regions in countries included in target_merge_countries.
+    """
+    if merge_some_countries:
+        for country in target_merge_countries:
+            # find regions that start with country
+            regions = data_df[data_df.zone.str.startswith(country)].zone.unique()
+
+            if target_variable == "waternodes_inflow":
+                # sum the inflows of the regions: 
+                df_temp = data_df[data_df.zone.isin(regions)].groupby(["year","week"]).sum().reset_index()
+            elif target_variable == "ror_inflow":
+                # sum the inflows of the regions: 
+                df_temp = data_df[data_df.zone.isin(regions)].groupby(["year","week","Day"]).sum().reset_index()
+
+            # change zone name from regionregion to country00
+            df_temp["zone"] = country + "00"
+
+            # remvoe the regions from the data_df
+            data_df = data_df[~data_df.zone.isin(regions)]
+
+            # add df_temp to data_df
+            data_df = pd.concat([data_df, df_temp])
+
+    return data_df
+
+# ------------------------------------------------------------------------------
+# if target_output_dir does not exist, create it
+if not os.path.exists(target_output_dir):
+    os.makedirs(target_output_dir)
 # %%
 # Load capacities data
 df_capacities = pd.read_csv(climate_data_dir+"PECD-hydro-capacities.csv")
+df_capacities = merge_country_regions_capacities(df_capacities)
 
 # %%
 # Create separate df_plants dataframe (should replace other hydro plant data - apart from CH)
 df_plants = df_capacities[(df_capacities.variable == "Total turbining capacity (MW)") | 
                           (df_capacities.variable == 'Total pumping capacity (MW)')].copy()
 df_plants = pd.pivot_table(df_plants,index=['zone','type'], columns='variable',values='value').reset_index()
+df_plants.to_clipboard()
 df_plants["tech"] = df_plants.type.map(technology_dict)
 df_plants = df_plants[df_plants["tech"]!="RoR"]
-df_plants["zone"] = df_plants.zone.map(map_zone)
+df_plants["zone"] = df_plants.zone
 df_plants = df_plants.groupby(['tech','zone']).sum().reset_index()
 df_plants["index"] = df_plants.zone + "_" + df_plants.tech
 df_plants['g_max'] = df_plants['Total turbining capacity (MW)']
@@ -68,7 +129,7 @@ df_waternodes = pd.pivot_table(df_waternodes,index=['zone','type'], columns='var
 df_waternodes[(df_waternodes["Cumulated (upper or head) reservoir capacity (GWh)"]>0) & 
                (df_waternodes["Reservoir capacity (GWh)"]>0)] 
 df_waternodes = df_waternodes.fillna(0)
-df_waternodes["zone"] = df_waternodes.zone.map(map_zone)
+df_waternodes["zone"] = df_waternodes.zone
 df_waternodes = df_waternodes.groupby(['zone','type']).sum().reset_index()
 df_waternodes = df_waternodes.dropna()
 df_waternodes['stor_max'] = df_waternodes["Cumulated (upper or head) reservoir capacity (GWh)"] + df_waternodes["Reservoir capacity (GWh)"]
@@ -96,8 +157,10 @@ df_waternodes = df_waternodes[["index","lower_node","stor_max","zone","type","pl
 df_waternodes.to_csv(target_output_dir + "waternodes_EU.csv", encoding="utf-8", index=False)
 
 # %%
+
 # Load waternodes inflow data
 df_waternodes_inflow = pd.read_csv(climate_data_dir+"PECD-hydro-weekly-inflows.csv")
+df_waternodes_inflow = merge_country_regions_inflow(df_waternodes_inflow, "waternodes_inflow")
 df_waternodes_inflow['week'] = 'w'+df_waternodes_inflow['week'].astype(str)
 df_waternodes_inflow_dam = df_waternodes_inflow[df_waternodes_inflow["Cumulated inflow into reservoirs per week in GWh"] > 0].copy()
 df_waternodes_inflow_dam["MWh"] =  df_waternodes_inflow_dam['Cumulated inflow into reservoirs per week in GWh'] * 1000 / (7*24)
@@ -130,6 +193,7 @@ for year in climate_years_list:
 # %%
 # Load waternodes level data
 df_waternodes_level = pd.read_csv(climate_data_dir+"PECD-hydro-weekly-reservoir-levels.csv")
+#merging regiosn of target countries was not needed because IT and LU were not in PECD-hydro-weekly-reservoir-levels.csv
 df_waternodes_level['week'] = 'w'+df_waternodes_level['week'].astype(str)
 df_waternodes_level = df_waternodes_level.rename(columns={'Reservoir levels at beginning of each week (ratio) 0<=x<=1.0':'level','Minimum Reservoir levels at beginning of each week (ratio) 0<=x<=1.0':'level_min','Maximum Reservoir level at beginning of each week (ratio) 0<=x<=1.0':'level_max'})
 df_waternodes_level['level'] = df_waternodes_level['level'].fillna((df_waternodes_level['level_min']+df_waternodes_level['level_max'])/2)
@@ -150,8 +214,9 @@ for year in climate_years_list:
 
 #we also load RoR daily generation from PECD
 df_gen_ror = pd.read_csv(climate_data_dir+"PECD-hydro-daily-ror-generation.csv")
+df_gen_ror = merge_country_regions_inflow(df_gen_ror, "ror_inflow")	
 df_gen_ror['MWh'] = df_gen_ror["Run of River Hydro Generation in GWh per day"] * 1000 / 24
-df_gen_ror['zone'] = df_gen_ror['zone'].map(map_zone) 
+df_gen_ror['zone'] = df_gen_ror.zone
 df_gen_ror = df_gen_ror.dropna()
 df_gen_ror = df_gen_ror.groupby(['zone','year','Day']).sum().reset_index()
 df_gen_ror.head()

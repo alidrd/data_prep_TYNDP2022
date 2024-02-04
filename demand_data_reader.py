@@ -1,9 +1,12 @@
 import pandas as pd
+import os
 
+# define options
+merge_IT_LU = True # if True, the data for several regions in Italy (and also Luxembourg) are merged into IT00 (and LU00)
 
 # define paths ---------------------------------------------------------------
 climate_data_dir = r"C:\Users\daru\OneDrive - ZHAW\EDGE\data_sources\TYNDP_2022\demand"
-target_output_dir = r"demand//"
+target_output_dir = r"inputs_to_model/demand/"
 
 # define years ---------------------------------------------------------------
 # years for which capacity factor is available
@@ -25,7 +28,9 @@ df = pd.read_csv("market_nodes.csv")
 for index, row in df.iterrows():
     Mapping_zone_country[row["data_granularity"]] = row["country"]
 
-
+# if target_output_dir does not exist, create it
+if not os.path.exists(target_output_dir):
+    os.makedirs(target_output_dir)
 
 # functions      -----------------------------------------------------------
 def read_data_demand(EU_policy, run_year, climate_year):
@@ -76,7 +81,13 @@ for run_year in PECD_data_years_list:
         for climate_year in climate_years_list:
             for PECD_year in PECD_data_years_list:
                 print("Reading demand data for ", run_year , " for climate_year year ", climate_year, " and EU policy ", EU_policy)
-                availability_factor_df = read_data_demand(EU_policy, run_year, climate_year)
+                demand_df = read_data_demand(EU_policy, run_year, climate_year)
+                if merge_IT_LU:
+                    for country in ["IT", "LU"]:
+                        regions_in_target_country = [region for region in demand_df.columns if region.startswith(country)]
+                        # remove all columns with regions_in_target_country from demand_df and add a new column with the sum of the removed columns named country + "00"
+                        demand_df[country + "00"] = demand_df[regions_in_target_country].sum(axis=1)
+                        demand_df = demand_df.drop(columns=regions_in_target_country)
                 # write the data to csv file
-                availability_factor_df.to_csv(target_output_dir + "demand_" + EU_policy_long + "_" + str(run_year) + "_" + str(climate_year) + ".csv", index=True)
+                demand_df.to_csv(target_output_dir + "demand_" + EU_policy_long + "_" + str(run_year) + "_" + str(climate_year) + ".csv", index=True)
 

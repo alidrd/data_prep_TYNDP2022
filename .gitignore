@@ -6,7 +6,8 @@ RES_availability_factor_PECD/*.csv
 annuals_cap_dem_gen_imp/*.csv
 hydro_PECD/*.csv
 # all files in input_to_model and its subfolders
-input_to_model/
+inputs_to_model/
+
 
 
 
