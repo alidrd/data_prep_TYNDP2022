@@ -160,4 +160,8 @@ for file in all_filenames:
 
 
     # write to a new 
+# if stat folder does not exist, create it
+if not os.path.exists("stats"):
+    os.makedirs("stats")
+
 all_averages.to_csv("stats//averages.csv", index=True)
