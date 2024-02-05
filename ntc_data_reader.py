@@ -6,7 +6,7 @@ import glob
 
 # define paths ---------------------------------------------------------------
 climate_data_dir = r"C:\Users\daru\OneDrive - ZHAW\EDGE\data_sources\TYNDP_2022//"
-target_output_dir = r"NTC//"
+target_output_dir = r"inputs_to_model//NTC//"
 
 # define years ---------------------------------------------------------------
 # years for which capacity factor is available
@@ -14,6 +14,15 @@ PECD_data_years_list = [2050,] # 2030, 2025, 2040
 
 # target climate years
 climate_years_list = [2008, 2009, 1995]
+
+# Options ---------------------------------------------------------------------
+merge_some_countries = True # if True, the data for several regions in Italy (and also Luxembourg) are merged into IT00 (and LU00)
+target_merge_countries = [
+    # "IT", # unnecessary to include IT, as NTC data only has IT00 already
+    "LU",
+    "PL",
+    ] # countries to merge
+
 
 # policy scenario
 EU_policy_dict = {
@@ -26,6 +35,9 @@ EU_policy_spaced_dict = {
     "GA": "Global Ambition",
     }
 
+# create target_output_dir if does not exist
+if not os.path.exists(target_output_dir):
+    os.makedirs(target_output_dir)
 # Mappings of zones in the model 
 Mapping_zone_country = {}
 # read values in market_nodes.csv into a dictionary, where the key is data_granularity and the value is the country, using pandas
@@ -121,20 +133,131 @@ def read_data_NTC(EU_policy, run_year, climate_year):
 
     return export_all_df, import_all_df, export_selected_df, import_selected_df, export_import_selected_df
 
+
+            # merging multiple parallel lines -----------------------------------------------
+
+def merge_parallel_lines(df):
+    """	
+    Merge parallel lines in the dataframe df.
+    The parallel lines are lines that have the same name except for the last character (ending in ["Concept", "Virtual", "Real", "Expansion"]).
+    The values in the parallel lines are summed and the index is renamed to the name of the first line.
+    The dataframe with the merged lines is returned.
+    """
+    element_groups_in_para = ["Concept", "Virtual", "Real"]
+    elements_items = [" " + element_groups_in_para[i] + " " + str(j) for i in range(len(element_groups_in_para)) for j in range(1, 6)]
+
+    # reset index
+    df = df.reset_index()
+
+    # rename all cells that contain any of the elements in element_groups_in_para by removing the element from the cell
+    for element in elements_items:
+        df["index"] = df["index"].str.replace(element, "")
+
+    # group by the index and sum the values in the same group
+    df_new = df.groupby("index").sum()
+
+    # set the column index as the index of the dataframe
+    df_new = df_new.set_index(df_new.index)
+    return df_new
+
+def merge_country_regions_lines(imp_exp_df):
+    """
+    Merge the regions in the list target_merge_countries into one region.
+    The regions are merged into the region with the name of the country + "00".
+    The values in the merged regions are summed and the index is renamed to the name of the first region.
+    The dataframe with the merged regions is returned.
+    """
+
+    # all_countries_in_df is the list of nodes in the index of imp_exp_df. The nodes are defined as the parts of the index before and after the first "-".
+    all_first_nodes_in_df = [node.split("-")[0] for node in imp_exp_df.index]
+    all_second_nodes_in_df = [node.split("-")[1] for node in imp_exp_df.index]
+    all_nodes_in_df = list(set(all_first_nodes_in_df + all_second_nodes_in_df))
+
+
+    for country in target_merge_countries:
+        regions_in_target_country = [region for region in all_nodes_in_df if region.startswith(country)]
+
+
+        # remove duplicates from regions_in_target_country
+        regions_in_target_country = list(set(regions_in_target_country)- set([country + "00"])) 
+        
+
+        imp_exp_df2 = imp_exp_df.copy()
+        if len(regions_in_target_country) > 0:
+            # if an index contains any of the values in regions_in_target_country, replace that part of the index with country + "00"
+            for region in regions_in_target_country:
+                imp_exp_df.index = imp_exp_df.index.str.replace(region, country + "00")
+            
+            # sum of the rows with the same index
+            imp_exp_df = imp_exp_df.groupby(imp_exp_df.index).sum()
+
+    return imp_exp_df
+
+
+def remove_duplicate_reverse_lines(imp_exp_df):
+    """
+    if there is an index that is the reverse of another index, remove the reverse index and add the value to the first index.
+    definition of reverse: element1+"00" + "-" + element2+"00"
+    e.g. PL00-DE00 and DE00-PL00 
+    """
+    imp_exp_df.to_clipboard()
+    line_name_list = imp_exp_df.index
+    processed_lines = []
+    # loop over index of imp_exp_df
+    for line_name in line_name_list:
+
+        # find the first and second node in the index
+        first_node = line_name.split("-")[0]
+        second_node = line_name.split("-")[1]
+        reverse_line = second_node + "-" + first_node
+        # if second_node + "-" + first_node is in the index, add the value of second_node + "-" + first_node to the value of the index and remove second_node + "-" + first_node
+        if line_name not in processed_lines:
+            if reverse_line not in processed_lines:
+                if reverse_line in line_name_list:
+                    imp_exp_df.loc[line_name] = imp_exp_df.loc[line_name] + imp_exp_df.loc[second_node + "-" + first_node]
+                    # drop the index reverse_line from imp_exp_df
+                    imp_exp_df = imp_exp_df.drop(index=reverse_line)
+
+                    # add line_name and reverse_line to processed_lines
+                    processed_lines = processed_lines + [line_name]
+                    processed_lines = processed_lines + [reverse_line]
+
+    return imp_exp_df
 # read in the data and write to csvs ----------------------------------------------------------
 for run_year in PECD_data_years_list:
     for EU_policy, EU_policy_long in EU_policy_spaced_dict.items():
         for climate_year in climate_years_list:
             print("Reading NTC data for ", run_year , " for climate_year year ", climate_year, " and EU policy ", EU_policy, 90*"-")
-            export_all_df, import_all_df, export_selected_df, import_selected_df, export_import_selected_df= read_data_NTC(EU_policy_long, run_year, climate_year)
+            export_all_df, import_all_df, *rest_of_dataframes= read_data_NTC(EU_policy_long, run_year, climate_year)
+            # merging multiple lines of the same country, removing H2 lines etc.
+
+            # removing H2 related lines -----------------------------------------------
+            elements_excluded_H2 = ["EV2","EV2W", "EV2W V2G", "H2MT", "SNR1", "H2R1", "RETE", "HER4", ]
+
+            # remove all rows if the index contains any of the elements in elements_excluded_H2
+            export_all_df = export_all_df[~export_all_df.index.str.contains('|'.join(elements_excluded_H2))]
+            import_all_df = import_all_df[~import_all_df.index.str.contains('|'.join(elements_excluded_H2))]
+            # export_selected_df = export_selected_df[~export_selected_df.index.str.contains('|'.join(elements_excluded_H2))]
+            # import_selected_df = import_selected_df[~import_selected_df.index.str.contains('|'.join(elements_excluded_H2))]
+            # export_import_selected_df = export_import_selected_df[~export_import_selected_df.index.str.contains('|'.join(elements_excluded_H2))]
+
+            export_merged_df = merge_parallel_lines(export_all_df)
+            import_merged_df = merge_parallel_lines(import_all_df)
+
+            # merge regions in target_merge_countries into one region
+            if merge_some_countries:
+                export_merged_df = merge_country_regions_lines(export_merged_df)
+                import_merged_df = merge_country_regions_lines(import_merged_df)
+
+            # remove duplicate reverse lines (and add them to the first line) - e.g. PL00-DE00 and DE00-PL00
+            export_merged_df = remove_duplicate_reverse_lines(export_merged_df)
+            import_merged_df = remove_duplicate_reverse_lines(import_merged_df)
+
             # write the data to csv file
             EU_policy_no_spaces = EU_policy_dict[EU_policy]
-            export_all_df.to_csv(target_output_dir + "NTC_export_" + EU_policy_long + "_" + str(run_year) + "_" + str(climate_year) + ".csv", index=True)
-            import_all_df.to_csv(target_output_dir + "NTC_import_" + EU_policy_long + "_" + str(run_year) + "_" + str(climate_year) + ".csv", index=True)
-            export_selected_df.to_csv(target_output_dir + "NTC_export_selected_" + EU_policy_long + "_" + str(run_year) + "_" + str(climate_year) + ".csv", index=True)
-            import_selected_df.to_csv(target_output_dir + "NTC_import_selected_" + EU_policy_long + "_" + str(run_year) + "_" + str(climate_year) + ".csv", index=True)
-            export_import_selected_df.to_csv(target_output_dir + "NTC_export_import_selected_" + EU_policy_long + "_" + str(run_year) + "_" + str(climate_year) + ".csv", index=True)
-            
+            export_merged_df.to_csv(target_output_dir + "NTC_export_" + EU_policy_long + "_" + str(run_year) + "_" + str(climate_year) + ".csv", index=True)
+            import_merged_df.to_csv(target_output_dir + "NTC_import_" + EU_policy_long + "_" + str(run_year) + "_" + str(climate_year) + ".csv", index=True)
+
 
 # sanity checks -----------------------------------------------
 # read all export_import_selected_df files and write to one file
