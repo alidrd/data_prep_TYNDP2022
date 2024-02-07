@@ -10,6 +10,8 @@ from the TYNDP 2022 data set and saves them as csv file.
 import pandas as pd
 import mappings_tyndp as mp
 import os
+from lists import target_country_list
+
 
 target_output_dir = r"annuals_cap_dem_gen_imp//"
 
@@ -31,39 +33,6 @@ EU_policy_spaced_dict = {
 # target_scenario = "Global Ambition"  #Distributed Energy  #Global Ambition
 # target_climate_year = 1995
 # target_year = 2050
-
-target_country_list = [
-    "RU",
-    "MA",
-    "CZ",
-    "FR",
-    "DE",
-    "NO",
-    "ES",
-    "IT",
-    "TR",
-    "DK",
-    "BG",
-    "SE",
-    "FI",
-    "BE",
-    "AT",
-    "PT",
-    "GR",
-    "PL",
-    "HU",
-    "CH",
-    "NL",
-    "EE",
-    "UK",
-    "IE",
-    "LT",
-    "RO",
-    "HR",
-    "LV",
-    "SK",
-    "SI",
-    ]
 
 # read data -------------------------------------------------------------------
 demand_all_df = pd.read_excel(r"C:\Users\daru\OneDrive - ZHAW\EDGE\data_sources\TYNDP_2022\220310_Updated_Electricity_Modelling_Results.xlsx", sheet_name="Demand")
