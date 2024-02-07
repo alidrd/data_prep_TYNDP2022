@@ -30,6 +30,15 @@ EU_policy_spaced_dict = {
     "GA": "Global Ambition",
     }
 
+merge_some_countries = True # if True, the data for several regions in Italy (and also Luxembourg) are merged into IT00 (and LU00)
+target_merge_countries = [
+    # "IT", # unnecessary to include IT, as data only has IT00 already
+    "LU",
+    # "PL", # unnecessary to include IT, as data only has IT00 already
+    # "FR",   # there is FR15 only in capacity data (only small dsr and battery)
+    ] # countries to merge
+
+
 # create target_output_dir if it does not exist
 if not os.path.exists(target_output_dir):
     os.makedirs(target_output_dir)
@@ -61,6 +70,33 @@ RES_technologies = ["windon", "windof", "pvrf"]
 # items that will be summed up to calculate the total electrolyzer demand
 columns_electrolyzer = ["Electrolysis Config 1",  "Electrolysis Config 2",  "Electrolysis Config 3",  "Electrolysis Config 4"]
 
+# Functions -----------------------------------------------------------------------------------------
+def merge_regions_in_country_capacity(df_gen):
+    for country in target_merge_countries:
+        # find the subset of rows in df_gen in which the column node starts with country
+        df_country = df_gen[df_gen.index.get_level_values(0).str.startswith(country)]
+
+        # remove all rows in df_country from df_gen
+        df_gen = df_gen[~df_gen.index.get_level_values(0).str.startswith(country)]
+
+        # reset the index
+        df_country = df_country.reset_index()
+
+        # rename node column to country + "00"
+        df_country["node"] = country + "00"
+
+        # rename nodeline column to country + "00"
+        df_country["nodeline"] = country + "00"
+
+        # group by node  fuel scenario  weather_year and run_year
+        df_country = df_country.groupby(["node", "nodeline", "fuel"]).sum()
+
+        # add df_country to df_gen
+        df_gen = pd.concat([df_gen, df_country])
+
+        df_gen.to_clipboard()
+
+    return df_gen
 #%%  generation and capacity data  (read and export) -------------------------------------------------
 # create annual generation.csv -----------------------------------------------------------------------
 # read in the data
@@ -79,11 +115,18 @@ for scen_short, scen_long, in EU_policy_spaced_dict.items():
             
             # apply the mapping of technologies between models: replace all keys in technology_dict with the corresponding values
             df_gen = df_gen.rename(index=technology_dict)
+            # merging some regions Luxembourg to only have values for LU00
+            if merge_some_countries:
+                df_gen = merge_regions_in_country_capacity(df_gen)
 
             # add columns for scenario, zone, zone_long, tech, weather_year
             df_gen["scenario"] = scen_long_no_space
             df_gen["weather_year"] = climate_year
             df_gen["run_year"] = run_year
+
+
+
+
 
             # merge df_gen with generation_all_df based on index, add columns from df_gen to generation_all_df
             generation_all_df = pd.concat([generation_all_df, df_gen])
@@ -91,6 +134,9 @@ for scen_short, scen_long, in EU_policy_spaced_dict.items():
         # ---------------------------------------------------------------------------------------------
         # capacity data -------------------------------------------------------------------------------
         df_cap = pd.read_csv(input_dir + "capacity_" + scen_long_no_space + "_" + str(run_year) + "_" + str(climate_year) + ".csv", index_col=[0, 1, 2])
+
+        if merge_some_countries:
+            df_cap = merge_regions_in_country_capacity(df_cap)
 
         # if there is a cell with value "q", replace it with float 12543.28 (one missing data issue for CZ00H2R1	Global Ambition 2050)
         df_cap = df_cap.replace("q", float(12543.28))
@@ -183,6 +229,28 @@ capacity_res_df = capacity_res_df.pivot_table(index=["name", "node", "fuel", "sc
 # rename fuel to tech
 capacity_res_df = capacity_res_df.rename(columns={"fuel": "tech"})
 
+# manual adjustments --------------------------------------------------------------------------------
+# if for a row, value of column 2050 is NaN, replace it with the value of column 2040
+capacity_res_df.loc[capacity_res_df[2050].isna(), 2050] = capacity_res_df.loc[capacity_res_df[2050].isna(), 2040]
+# should affect the following rows:
+# DKKF_windof	DKKF	windof	GlobalAmbition	605	605	
+# CH00_pvrf	CH00	pvrf	GlobalAmbition	5487	6250	
+
+# if for a row, value of column 2040 is NaN, and value of 2030 is not Nan, replace value of 2040 with the value of column 2050
+capacity_res_df.loc[capacity_res_df[2040].isna() & ~capacity_res_df[2030].isna(), 2040] = capacity_res_df.loc[capacity_res_df[2040].isna() & ~capacity_res_df[2030].isna(), 2050]
+
+# add rows below to add some offshore wind capacity to DEKF (as much as planned in NationalTrends 2040)
+# DEKF_windof DEKF windof GlobalAmbition 336 336 336
+# DEKF_windof DEKF windof DistributedEnergy 336 336 336
+new_rows = pd.DataFrame([
+    {'name': 'DEKF_windof', 'node': 'DEKF', 'tech': 'windof',    'scenario': 'GlobalAmbition', 2030: 336, 2040: 336, 2050: 336},
+    {'name': 'DEKF_windof', 'node': 'DEKF', 'tech': 'windof', 'scenario': 'DistributedEnergy', 2030: 336, 2040: 336, 2050: 336}
+])
+
+capacity_res_df = pd.concat([capacity_res_df, new_rows], ignore_index=True)
+
+
+
 # export the dataframe
 capacity_res_df.to_csv(target_output_dir + "res_capacities_TYNDP22.csv", encoding="utf-8", index=False)
 
@@ -250,12 +318,14 @@ dem_exp_df["tech"] = "electrolyzer"
 
 dem_exp_df["net_demand"] = dem_exp_df["sum_electrolyzer"] + dem_exp_df["net_export"]
 
-dem_exp_df["node"] = dem_exp_df.loc[:, "index"] + "00"
+# dem_exp_df["node"] is equal to dem_exp_df.loc[:, "index"] + "00" if is of size 2, else it is equal to dem_exp_df.loc[:, "index"]
+# if size is 2, it is a country code and needs 00, if size is 4, it is a region code already
+dem_exp_df["node"] = dem_exp_df["index"].apply(lambda x: x + "00" if len(x) == 2 else x)
 
 dem_exp_df["name"] = "electrolyzer_" + dem_exp_df["node"]
 
 # export the columns name, node, tech, scenario, run_year, weather_year, electrolyzer_net_demand
-dem_exp_df = dem_exp_df[["name", "node", "tech", "scenario", "run_year", "weather_year", "electrolyzer_net_demand"]]
+dem_exp_df = dem_exp_df[["name", "node", "tech", "scenario", "run_year", "weather_year", "net_demand"]]
 dem_exp_df.to_csv(target_output_dir + "electrolyzer_net_demand.csv", encoding="utf-8", index=False)
 
 # create plants_electrolyzer.csv ----------------------------------------------------------------------------
@@ -266,6 +336,9 @@ plants_electrolyzer_list_df["node"] = dem_exp_df["node"]
 plants_electrolyzer_list_df["market"] = dem_exp_df["node"]
 plants_electrolyzer_list_df["plant_type"] = "electrolyzer"
 plants_electrolyzer_list_df["tech"] = "electrolyzer"
+
+# remove duplicates from plants_electrolyzer_list_df (duplicates results from the fact that the same plant is in the same country for different weather years)
+plants_electrolyzer_list_df = plants_electrolyzer_list_df.drop_duplicates()
 
 plants_electrolyzer_list_df.to_csv(target_output_dir + "plants_electrolyzer.csv", encoding="utf-8", index=False)
 
