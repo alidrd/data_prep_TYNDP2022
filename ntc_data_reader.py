@@ -182,7 +182,6 @@ def merge_country_regions_lines(imp_exp_df):
         regions_in_target_country = list(set(regions_in_target_country)- set([country + "00"])) 
         
 
-        imp_exp_df2 = imp_exp_df.copy()
         if len(regions_in_target_country) > 0:
             # if an index contains any of the values in regions_in_target_country, replace that part of the index with country + "00"
             for region in regions_in_target_country:
@@ -191,38 +190,111 @@ def merge_country_regions_lines(imp_exp_df):
             # sum of the rows with the same index
             imp_exp_df = imp_exp_df.groupby(imp_exp_df.index).sum()
 
+
+        # loop over every row, if an index contains str.split("-")[0] == str.split("-")[1] (e.g. PL00-PL00), remove the row
+        for index in imp_exp_df.index:
+            if index.split("-")[0] == index.split("-")[1]:
+                try:
+                    imp_exp_df = imp_exp_df.drop(index=index)
+                except:
+                    print(f"index {index} not in index of imp_exp_df")
+            
+
+        # imp_exp_df.loc["PL00-DE00"]
     return imp_exp_df
 
 
-def remove_duplicate_reverse_lines(imp_exp_df):
+def remove_duplicate_reverse_lines(exp_df, imp_df):
     """
-    if there is an index that is the reverse of another index, remove the reverse index and add the value to the first index.
-    definition of reverse: element1+"00" + "-" + element2+"00"
-    e.g. PL00-DE00 and DE00-PL00 
+    For reverse lines, create one entry per export and import (to avoid having PL00-DE00 and DE00-PL00 lines at the same time).
     """
-    imp_exp_df.to_clipboard()
-    line_name_list = imp_exp_df.index
-    processed_lines = []
-    # loop over index of imp_exp_df
-    for line_name in line_name_list:
+    def find_duplicate_index(df):
+        line_name_list = df.index
 
-        # find the first and second node in the index
-        first_node = line_name.split("-")[0]
-        second_node = line_name.split("-")[1]
+        # find lines whose reverse is also in the index -----------------------------------------------
+        # list of the reverse lines (if a line has its own reverse also in the index, it will be stored here)
+        duplicate_lines_list = []
+        # loop over index of imp_exp_df
+        for line_name in line_name_list:
+
+            # find the first and second node in the index
+            first_node = line_name.split("-")[0]
+            second_node = line_name.split("-")[1]
+            reverse_line = second_node + "-" + first_node
+
+            if reverse_line in line_name_list:
+                if line_name not in duplicate_lines_list:
+                    duplicate_lines_list = duplicate_lines_list + [reverse_line]
+    
+        return duplicate_lines_list
+
+    duplicate_lines_exp = find_duplicate_index(exp_df)
+    duplicate_lines_imp = find_duplicate_index(imp_df)
+
+    # merge the two lists and keep unique values
+    duplicate_lines_list = list(set(duplicate_lines_exp + duplicate_lines_imp))
+
+    # remove duplicate lines and their reverse from exp_df and imp_df -----------------------------------------------
+    exp_original_df = exp_df.copy()
+    imp_original_df = imp_df.copy()
+
+    # remove rows that have line or reverse_line as index, if the row exists ---------------------------------------
+    for line in duplicate_lines_list:
+        reverse_line = line.split("-")[1] + "-" + line.split("-")[0]
+
+        try:
+            exp_df = exp_df.drop(index=line)
+        except KeyError:
+            pass
+        
+        try:
+            exp_df = exp_df.drop(index=reverse_line)
+        except KeyError:
+            pass
+
+        try:
+            imp_df = imp_df.drop(index=line)
+        except KeyError:
+            pass
+
+        try:
+            imp_df = imp_df.drop(index=reverse_line)
+        except KeyError:
+            pass
+
+
+    # add back the values of duplicate_lines_list to exp_df and imp_df -----------------------------------------------
+    for line in duplicate_lines_list:
+        first_node = line.split("-")[0]
+        second_node = line.split("-")[1]
         reverse_line = second_node + "-" + first_node
-        # if second_node + "-" + first_node is in the index, add the value of second_node + "-" + first_node to the value of the index and remove second_node + "-" + first_node
-        if line_name not in processed_lines:
-            if reverse_line not in processed_lines:
-                if reverse_line in line_name_list:
-                    imp_exp_df.loc[line_name] = imp_exp_df.loc[line_name] + imp_exp_df.loc[second_node + "-" + first_node]
-                    # drop the index reverse_line from imp_exp_df
-                    imp_exp_df = imp_exp_df.drop(index=reverse_line)
 
-                    # add line_name and reverse_line to processed_lines
-                    processed_lines = processed_lines + [line_name]
-                    processed_lines = processed_lines + [reverse_line]
+        # below are equations used to merge values (if reverse exists or not)
+        try:
+            exp_org_value = exp_original_df.loc[line].values[0]
+        except KeyError:
+            exp_org_value = 0
 
-    return imp_exp_df
+        try:
+            exp_reverse_value = imp_original_df.loc[reverse_line].values[0]
+        except KeyError:
+            exp_reverse_value = 0
+
+        try:
+            imp_org_value = imp_original_df.loc[line].values[0]
+        except KeyError:
+            imp_org_value = 0
+
+        try:
+            imp_reverse_value = exp_original_df.loc[reverse_line].values[0]
+        except KeyError:
+            imp_reverse_value = 0
+
+        exp_df.loc[line] = exp_org_value + exp_reverse_value
+        imp_df.loc[line] = imp_org_value + imp_reverse_value
+
+    return exp_df, imp_df
+
 # read in the data and write to csvs ----------------------------------------------------------
 for run_year in PECD_data_years_list:
     for EU_policy, EU_policy_long in EU_policy_spaced_dict.items():
@@ -230,33 +302,32 @@ for run_year in PECD_data_years_list:
             print("Reading NTC data for ", run_year , " for climate_year year ", climate_year, " and EU policy ", EU_policy, 90*"-")
             export_all_df, import_all_df, *rest_of_dataframes= read_data_NTC(EU_policy_long, run_year, climate_year)
             # merging multiple lines of the same country, removing H2 lines etc.
+            # export_all_df.loc["PLE0-DE00"]
 
             # removing H2 related lines -----------------------------------------------
             elements_excluded_H2 = ["EV2","EV2W", "EV2W V2G", "H2MT", "SNR1", "H2R1", "RETE", "HER4", ]
 
             # remove all rows if the index contains any of the elements in elements_excluded_H2
-            export_all_df = export_all_df[~export_all_df.index.str.contains('|'.join(elements_excluded_H2))]
-            import_all_df = import_all_df[~import_all_df.index.str.contains('|'.join(elements_excluded_H2))]
-            # export_selected_df = export_selected_df[~export_selected_df.index.str.contains('|'.join(elements_excluded_H2))]
-            # import_selected_df = import_selected_df[~import_selected_df.index.str.contains('|'.join(elements_excluded_H2))]
-            # export_import_selected_df = export_import_selected_df[~export_import_selected_df.index.str.contains('|'.join(elements_excluded_H2))]
+            export_df = export_all_df[~export_all_df.index.str.contains('|'.join(elements_excluded_H2))]
+            import_df = import_all_df[~import_all_df.index.str.contains('|'.join(elements_excluded_H2))]
 
-            export_merged_df = merge_parallel_lines(export_all_df)
-            import_merged_df = merge_parallel_lines(import_all_df)
+            export_df = merge_parallel_lines(export_df)
+            import_df = merge_parallel_lines(import_df)
 
             # merge regions in target_merge_countries into one region
             if merge_some_countries:
-                export_merged_df = merge_country_regions_lines(export_merged_df)
-                import_merged_df = merge_country_regions_lines(import_merged_df)
+                export_df = merge_country_regions_lines(export_df)
+                import_df = merge_country_regions_lines(import_df)
+
+
 
             # remove duplicate reverse lines (and add them to the first line) - e.g. PL00-DE00 and DE00-PL00
-            export_merged_df = remove_duplicate_reverse_lines(export_merged_df)
-            import_merged_df = remove_duplicate_reverse_lines(import_merged_df)
-
+            export_df, import_df = remove_duplicate_reverse_lines(export_df, import_df)
+            
             # write the data to csv file
             EU_policy_no_spaces = EU_policy_dict[EU_policy]
-            export_merged_df.to_csv(target_output_dir + "NTC_export_" + EU_policy_long + "_" + str(run_year) + "_" + str(climate_year) + ".csv", index=True)
-            import_merged_df.to_csv(target_output_dir + "NTC_import_" + EU_policy_long + "_" + str(run_year) + "_" + str(climate_year) + ".csv", index=True)
+            export_df.to_csv(target_output_dir + "NTC_export_" + EU_policy_long + "_" + str(run_year) + "_" + str(climate_year) + ".csv", index=True)
+            import_df.to_csv(target_output_dir + "NTC_import_" + EU_policy_long + "_" + str(run_year) + "_" + str(climate_year) + ".csv", index=True)
 
 
 # sanity checks -----------------------------------------------
@@ -264,13 +335,13 @@ for run_year in PECD_data_years_list:
 # find all files in the target_output_dir that start with "NTC_export_import_selected_"
 os.chdir(target_output_dir)
 extension = 'csv'
-all_filenames = [i for i in glob.glob('NTC_export_import_selected_*.{}'.format(extension))]
+all_filenames = [i for i in glob.glob('NTC_*.{}'.format(extension))]
 
 # loop over all files, read them in and write to one file
 export_import_selected_all_df = pd.DataFrame()
 for file in all_filenames:
-    scen_name = file.split("_")[4]
-    run_year = file.split("_")[5]
+    scen_name = file.split("_")[2]
+    run_year = file.split("_")[3]
 
     # read in the file
     df = pd.read_csv(file, index_col=0)
@@ -280,4 +351,4 @@ for file in all_filenames:
 
     export_import_selected_all_df = pd.concat([export_import_selected_all_df, df], axis=1)
 
-export_import_selected_all_df.to_csv("all_NTC_export_import_selected.csv", index=True)
+export_import_selected_all_df.to_csv("all_NTC_export_import_selected2.csv", index=True)
