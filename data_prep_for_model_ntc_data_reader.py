@@ -330,6 +330,8 @@ for run_year in PECD_data_years_list:
             import_df.to_csv(target_output_dir + "NTC_import_" + EU_policy_long + "_" + str(run_year) + "_" + str(climate_year) + ".csv", index=True)
 
 
+
+
 # sanity checks -----------------------------------------------
 # read all export_import_selected_df files and write to one file
 # find all files in the target_output_dir that start with "NTC_export_import_selected_"
