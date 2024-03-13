@@ -130,7 +130,7 @@ for scenario in eu_scenario_list:
                 flows_h2_export_import_df.loc[row_counter, "plant_name"] = node + "_electrolyzer"
                 flows_h2_export_import_df.loc[row_counter, "node"] = node
                 flows_h2_export_import_df.loc[row_counter, "year"] = year
-                flows_h2_export_import_df.loc[row_counter, "scenario"] = scenario.replace(" ", "_")
+                flows_h2_export_import_df.loc[row_counter, "scenario"] = scenario.replace(" ", "")
                 flows_h2_export_import_df.loc[row_counter, "weather_year"] = weather_year
                 flows_h2_export_import_df.loc[row_counter, "H2_export"] = H2_export
                 flows_h2_export_import_df.loc[row_counter, "H2_import"] = H2_import
