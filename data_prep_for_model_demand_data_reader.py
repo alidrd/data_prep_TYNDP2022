@@ -56,8 +56,9 @@ def read_data_demand(EU_policy, run_year, climate_year):
     # # consider only sheets that are included in the keys of Mapping_zone_country
     # sheets = [sheet for sheet in sheets if sheet in Mapping_zone_country.keys()]
 
-    # loop over sheets to read in the data
+    # loop over sheets to read in the data"
     df = pd.DataFrame()
+
     for sheet in sheets:
         df_temp = pd.read_excel(file_name, sheet_name=sheet, header=6, index_col=False)
 
@@ -68,7 +69,7 @@ def read_data_demand(EU_policy, run_year, climate_year):
         df_temp = df_temp.rename(sheet)
 
         # rename the index to "t_" + the row number
-        df_temp.index = ["t_" + str(i+1) for i in df_temp.index]
+        df_temp.index = [i+1 for i in df_temp.index]
 
         # add the new column to the dataframe
         df = pd.concat([df, df_temp], axis=1)
@@ -88,6 +89,6 @@ for run_year in PECD_data_years_list:
                         # remove all columns with regions_in_target_country from demand_df and add a new column with the sum of the removed columns named country + "00"
                         demand_df[country + "00"] = demand_df[regions_in_target_country].sum(axis=1)
                         demand_df = demand_df.drop(columns=regions_in_target_country)
-                # write the data to csv file
+                # write the data to csv file, export index and name it "t"                        
+                demand_df.index.name = "t"
                 demand_df.to_csv(target_output_dir + "demand_" + EU_policy_long + "_" + str(run_year) + "_" + str(climate_year) + ".csv", index=True)
-

@@ -298,7 +298,7 @@ def remove_duplicate_reverse_lines(exp_df, imp_df):
 # read in the data and write to csvs ----------------------------------------------------------
 for run_year in PECD_data_years_list:
     for EU_policy, EU_policy_long in EU_policy_spaced_dict.items():
-        for climate_year in climate_years_list:
+        for climate_year in [1995, ]: # NOTE NTC values were indepentent of weather year, so only one year is used
             print("Reading NTC data for ", run_year , " for climate_year year ", climate_year, " and EU policy ", EU_policy, 90*"-")
             export_all_df, import_all_df, *rest_of_dataframes= read_data_NTC(EU_policy_long, run_year, climate_year)
             # merging multiple lines of the same country, removing H2 lines etc.
@@ -326,8 +326,8 @@ for run_year in PECD_data_years_list:
             
             # write the data to csv file
             EU_policy_no_spaces = EU_policy_dict[EU_policy]
-            export_df.to_csv(target_output_dir + "NTC_export_" + EU_policy_long + "_" + str(run_year) + "_" + str(climate_year) + ".csv", index=True)
-            import_df.to_csv(target_output_dir + "NTC_import_" + EU_policy_long + "_" + str(run_year) + "_" + str(climate_year) + ".csv", index=True)
+            export_df.to_csv(target_output_dir + "NTC_export_" + EU_policy_long.replace(" ", "") + "_" + str(run_year) + ".csv", index=True)
+            import_df.to_csv(target_output_dir + "NTC_import_" + EU_policy_long.replace(" ", "") + "_" + str(run_year) + ".csv", index=True)
 
 
 
