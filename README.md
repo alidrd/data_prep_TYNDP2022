@@ -1,31 +1,28 @@
-**TYNDP 2022 Python Analysis Repository**
+**Data Prep for FEM - TYNDP 2022**
 
 This repository contains Python code for analyzing the TYNDP 2022
 dataset focusing on demand, NTC (Net Transfer Capacity), and reserve
-data.
+data. Additionally, Prognos data processing is also included.
 
 **Installation**
 
 1.  **Clone this repository:**
 
-> Bash
->
-> git clone https://github.com/alidrd/data_prep_TYNDP2022.git
->
-> content_copy
+```bash
+git clone https://github.com/alidrd/data_prep_TYNDP2022.git
+```
 
 2.  **Install dependencies:**
 
-> Bash
->
-> pip install -r requirements.txt
->
-> content_copy
+```bash
+
+pip install -r requirements.txt
+```
 
 **Dataset**
 
 - Download the TYNDP 2022 dataset from the provided SharePoint link
-  (https://zhaw-my.sharepoint.com/:f:/g/personal/daru_zhaw_ch/Eo5SHpilb85Ij-NT38tPJhoBIjamu1zvJ_CNN7v3sxnNzg?e=s9Lbjk{.underline}).
+  (https://zhaw-my.sharepoint.com/:f:/g/personal/daru_zhaw_ch/Eo5SHpilb85Ij-NT38tPJhoBIjamu1zvJ_CNN7v3sxnNzg?e=s9Lbjk).
 
 - Extract the downloaded files to a folder on your disk.
 
