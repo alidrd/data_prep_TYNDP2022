@@ -5,7 +5,7 @@ This script prepares the following data for the model:
 - annual demand of electrolysis
 
 Important:
-run electrolysis_demand_read.py and tyndp22_flows.py before running this script
+run electrolysis_demand_read.py and tyndp22_flows.py and cap_gen_read.py before running this script
 
 """
 import subprocess

@@ -1,3 +1,7 @@
+"""
+Stores some mappings from the TYNDP 2022 data source, to be used in other scripts.
+"""
+
 import pandas as pd
 
 # Read in the data

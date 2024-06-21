@@ -1,3 +1,9 @@
+"""
+This script is used to identify holidays in the demand time series data.
+This was used to identify issues with Progons time series data.
+The holidays are identified based on the average daily consumption.
+"""
+
 import pandas as pd
 import os
 
