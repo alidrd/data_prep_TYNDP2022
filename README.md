@@ -21,8 +21,7 @@ pip install -r requirements.txt
 
 **Dataset**
 
-- Download the TYNDP 2022 dataset from the provided SharePoint link
-  (https://zhaw-my.sharepoint.com/:f:/g/personal/daru_zhaw_ch/Eo5SHpilb85Ij-NT38tPJhoBIjamu1zvJ_CNN7v3sxnNzg?e=s9Lbjk).
+- Download the TYNDP 2022 dataset from the provided SharePoint link: [TYNDP22 Dataset](https://zhaw-my.sharepoint.com/:f:/g/personal/daru_zhaw_ch/Eo5SHpilb85Ij-NT38tPJhoBIjamu1zvJ_CNN7v3sxnNzg?e=s9Lbjk).
 
 - Extract the downloaded files to a folder on your disk.
 
